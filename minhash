@@ -1,0 +1,100 @@
+1  import pickle
+2  from heapq import heapify,heappop,heappush
+3  import random
+4  
+5  totalShingles = 23880
+6  pklHandler = open("C:/Users/marius.cerbauskas/PycharmProjects/untitled/venv/docShingleDict.pkl", 'rb')
+7  docShingleDict= pickle.load(pklHandler)
+8  pklHandler.close()
+9  
+10 def findRandomNos(k):
+11   randList = []
+12   randIndex = random.randint(0, totalShingles -1) 
+13   randList.append(randIndex)
+14   while k>0:
+15     while randIndex in randList:
+16       randIndex = random.randint(0, totalShingles-1) 
+17       
+18     randList.append(randIndex)
+19     k = k-1
+20     
+21   return randList
+22   
+23 randomNoA = findRandomNos(25)
+24 randomNoB = findRandomNos(25)
+25 
+26 docLowestShingleID = {}
+27 for doc in docShingleDict.keys():
+28   shingleIDSet = docShingleDict[doc]
+29   lowestShingleID = []
+30   for x in range(0,25):
+31     listFx = []
+32     for shingleID in shingleIDSet:
+33       temp = (randomNoA[x] * shingleID + randomNoB[x]) % totalShingles 
+34       listFx.append(temp)
+35     heapify(listFx)
+36     lowestShingleID.append(heappop(listFx))
+37   docLowestShingleID[doc] = lowestShingleID
+38 
+39 #for doc in docLowestShingleID:
+40 #  print doc, docLowestShingleID[doc]
+41 
+42 def getFileNo(x):
+43   if x<10:
+44     x = "0" + str(x)
+45   else:
+46     x = str(x)
+47   
+48   return x
+49 
+50 estimateMatrix = []
+51 for x in range(0,100):
+52   doc1 = "file"+getFileNo(x)
+53   doc1LowestShingles = docLowestShingleID[doc1]
+54   col = []
+55   for y in range(0,100):
+56     doc2 = "file"+getFileNo(y)
+57     doc2LowestShingles = docLowestShingleID[doc2]
+58     count = 0
+59     for i in range(0,25):
+60       if doc1LowestShingles[i] == doc2LowestShingles[i]:
+61         count = count + 1
+62         
+63     col.append(count/25)
+64   estimateMatrix.append(col)
+65   
+66 print("\nDokumentai, kuriu J(d1,d2) koeficientas didesnis uz 0.5")
+67 for x in range(0,100): #50
+68   file1 = "file" + getFileNo(x)
+69   for y in range(0,50):
+70     if estimateMatrix[x][y] > 0.5:
+71       file2 = "file" + getFileNo(y)
+72       if file1 != file2:
+73         shinglesSet1 = docShingleDict[file1]
+74         shinglesSet2 = docShingleDict[file2]
+75         print("d1: " + file1 + " ir d2: " + file2)
+76         print("J(d1,d2): " + str(estimateMatrix[x][y]))  
+77         jaccard = (len(shinglesSet1.intersection(shinglesSet2)) / len(shinglesSet1.union(shinglesSet2)))
+78         print("Jaccard koeficientas: ", str(jaccard))
+79         print() 
+80 
+81 docJaccard = {}
+82 
+83 def pop(jaccardList):
+84   estimatedJaccardC, fileX = heappop(jaccardList)
+85   print(fileX, end=' ')
+86 
+87 print("Three nearest neighbors for the first 10 files")
+88 
+89 for x in range(0,10):
+90   file1 = "file" + getFileNo(x)
+91   estimatedJaccardList = []
+92   for y in range(0,100):
+93     file2 = "file" + getFileNo(y)
+94     if file1 != file2:
+95       heappush(estimatedJaccardList, (-estimateMatrix[x][y], file2))
+96   
+97   #print estimatedJaccardList
+98   print("\n" + file1 + ":", end=' ')
+99   for x in range(0,3):
+100    pop(estimatedJaccardList)
